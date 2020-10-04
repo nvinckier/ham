@@ -11,7 +11,6 @@ sample_sheet_file = None    # -i
 hamming_distance_maximum = 3    # -d
 
 # process_args - Process command line arguments and update globals variables.
-
 def process_args():
     global sample_sheet_file, hamming_distance_maximum
 
@@ -117,7 +116,6 @@ def open_SS(file):
     return indexSeries
 
 # Hamming distance calculation function
-
 def hamming_distance(string1, string2):
     # Start with a distance of zero, and count up
     distance = 0
@@ -131,8 +129,7 @@ def hamming_distance(string1, string2):
     return distance
 
 ####################################################################################################
-# main
-#
+# Main function
 def main():
     global sample_sheet_file, hamming_distance_maximum
     process_args()
