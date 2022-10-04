@@ -1,4 +1,4 @@
-#!/home/nvinckier/anaconda3/bin/python
+#!/bin/python
 
 import sys
 import getopt
@@ -10,11 +10,11 @@ hamming_distance_maximum = 3    # -d
 
 # Define colors for printing to terminal
 class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
+    HEADER = '\033[35m'
+    OKBLUE = '\033[34m'
+    OKGREEN = '\033[32m'
+    WARNING = '\033[33m'
+    FAIL = '\033[31m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     ENDC = '\033[0m'
@@ -119,26 +119,19 @@ def open_SS(file):
             for col in header:
                 if 'index' == col.lower().strip():
                     index1 = header.index(col)
-                    # print(index1)
                 elif 'index2' == col.lower().strip():
                     index2 = header.index(col)
-                    # print(index2)
-            for sampleNum in range(0,len(indexes)-1):
+            for sampleNum in range(0,len(indexes)):
                 if index2 != 'single-indexed':
-                    # print(sampleNum)
-                    # print(indexes[sampleNum][index1:])
+                    print(indexes[sampleNum][index1:])
                     index1List.append(indexes[sampleNum][index1])
                     index2List.append(indexes[sampleNum][index2])
                     sampleIndex = indexes[sampleNum][index1] + '+' +  indexes[sampleNum][index2]
-                    # print(indexes[sampleNum][0] + '+' + indexes[sampleNum])
-                    # print(sampleIndex)
                 else:
                     index1List.append(indexes[sampleNum][index1])
                     sampleIndex = indexes[sampleNum][index1]
                 indexList.append(sampleIndex)
-            # print(index1List)
-            # print(index2List)
-            # print(indexList)
+            print(index1List)
     return index1List, index2List, indexList
 
 # Hamming distance calculation function
@@ -148,40 +141,47 @@ def hamming_distance(string1, string2):
     # Loop over the indices of the string
     L = len(string1) - 1
     for i in range(L):
-        # Add 1 to the distance if these two characters are not equal
-        # print(i)
-        # print(string1)
-        # print(string2)
         if string1[i] != string2[i]:
             distance += 1
     # Return the final count of differences
     return distance
 
 def get_hamming_distance(inputList):
-    global hamDist, str1, str2 
-    while len(inputList) > 1:
+    hamDist = 0
+    results = ""
+    resultsHeader = ""
+    headerCol1 = '1st Index'
+    headerCol2 = '2nd Index'
+    headerCol3 = 'Hamming Distance'
+    headerCol4 = 'Comment'
+    resultsHeader = headerCol1 + '\t' + headerCol2 + '\t' + headerCol3 + '\t' + headerCol4 + '\n'
+    results += resultsHeader
+    while len(inputList) > 0:
         for num1 in range(0,len(inputList)):
             str1 = inputList.pop(0)
+            str1Length = len(str1)
             for num2 in range(0,len(inputList)):
                 str2 = inputList[num2]
+                str2Length = len(str2)
                 hamDist = hamming_distance(str1,str2)
+
                 if hamDist == 0:
-                    newRow = (bcolors.FAIL + str1 + '\t' + str2 + '\t' + str(hamDist) + '\t' +  'Barcode Collision! Cannot demultiplex these samples.' + bcolors.ENDC)
-                    print(newRow)
+                    newRow = (bcolors.FAIL + str1 + '\t' + str2 + '\t' + str(hamDist) + '\t' +  'Barcode Collision! Cannot demultiplex these samples.' + bcolors.ENDC + '\n')
+                    results+=newRow
                 elif 0 < hamDist <= 2:
-                    newRow = (bcolors.WARNING + str1 + '\t' + str2 + '\t' + str(hamDist) + '\t' + 'No mismatches in index reads can be allowed during demultiplexing.' + bcolors.ENDC)
-                    print(newRow)
+                    newRow = (bcolors.WARNING + str1 + '\t' + str2 + '\t' + str(hamDist) + '\t' + 'No mismatches in index reads can be allowed during demultiplexing.' + bcolors.ENDC + '\n')
+                    results+=newRow
                 elif 2 < hamDist <= int(hamming_distance_maximum):
-                    newRow = (str1 + '\t' + str2 + '\t' + str(hamDist))
-                    print(newRow)
-    return hamDist
+                    newRow = (str1 + '\t' + str2 + '\t' + str(hamDist) + '\n')
+                    results+=newRow
+    print(len(results.split('\t')))
+    return hamDist, results
 
 ####################################################################################################
 #                                          Main function                                           #
 ####################################################################################################
 def main():
     global sample_sheet_file, hamming_distance_maximum, v2detected
-    hamDist = 0
     process_args()
     # Find sample sheet on system
     print("Reporting indexes with hamming distance of %s or less" % hamming_distance_maximum)
@@ -199,13 +199,11 @@ def main():
     if v2detected == 'true':
         print("V2 sample sheet detected")
         print('')
-        print('1st Index' + '\t' + '2nd Index' + '\t' + 'Hamming Distance'+ '\t' + 'Comment')
-        for currentList in [index1List, index2List, indexList]:
-            # print(currentList)
-            get_hamming_distance(currentList)
-    else:
-        print('')
-        print('1st Index' + '\t' + '2nd Index' + '\t' + 'Hamming Distance'+ '\t' + 'Comment')
-        get_hamming_distance(indexList)
+    print("Checking Index 1 sequences for collisions")
+    get_hamming_distance(index1List)
+    print("Checking Index 2 sequences for collisions")
+    get_hamming_distance(index2List)
+    print("Checking concatenation of Index 1 and 2 sequences for collisions")
+    get_hamming_distance(indexList)
 if __name__ == "__main__":
     main()
