@@ -57,7 +57,7 @@ def usage():
     print("*--._ ./      Hamming                  ___.-'")
     print("    |         Distance             _.-' ")
     print("    :         Calculator        .-/   ")
-    print("     \\        0.2.1          )_ /")
+    print("     \\        0.2.2          )_ /")
     print("      \\                _)   / \\(")
     print("        `.   /-.___.---'(  /   \\\\ ")
     print("         (  /   \\\\       \\(     L\\ ")
