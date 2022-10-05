@@ -21,16 +21,21 @@ class bcolors:
     BOLD = '\033[1m'
     ENDC = '\033[0m'
 
-# print(bcolors.TEAL + "This is the TEAL color/style." + bcolors.ENDC)
-# print(bcolors.PURPLE + "This is the PURPLE color/style." + bcolors.ENDC)
-# print(bcolors.BLUE + "This is the BLUE color/style." + bcolors.ENDC)
-# print(bcolors.YELLOW + "This is the YELLOW color/style." + bcolors.ENDC)
-# print(bcolors.GREEN + "This is the GREEN color/style." + bcolors.ENDC)
-# print(bcolors.RED + "This is the RED color/style." + bcolors.ENDC)
-# print(bcolors.UNDERLINE + "This is the UNDERLINE color/style." + bcolors.ENDC)
-# print(bcolors.ITALIC + "This is the ITALIC color/style." + bcolors.ENDC)
-# print(bcolors.BOLD + "This is the BOLD color/style." + bcolors.ENDC)
-# print(bcolors.ENDC + "This is the ENDC color/style." + bcolors.ENDC)
+def print_colors():
+    print(bcolors.TEAL + "This is the TEAL color/style." + bcolors.ENDC)
+    print(bcolors.PURPLE + "This is the PURPLE color/style." + bcolors.ENDC)
+    print(bcolors.BLUE + "This is the BLUE color/style." + bcolors.ENDC)
+    print(bcolors.YELLOW + "This is the YELLOW color/style." + bcolors.ENDC)
+    print(bcolors.GREEN + "This is the GREEN color/style." + bcolors.ENDC)
+    print(bcolors.RED + "This is the RED color/style." + bcolors.ENDC)
+    print(bcolors.UNDERLINE + "This is the UNDERLINE color/style." + bcolors.ENDC)
+    print(bcolors.ITALIC + "This is the ITALIC color/style." + bcolors.ENDC)
+    print(bcolors.BOLD + "This is the BOLD color/style." + bcolors.ENDC)
+    print(bcolors.ENDC + "This is the ENDC color/style." + bcolors.ENDC)
+    return
+
+# Uncomment to check colors in terminal
+# print_colors()
 
 # process_args - Process command line arguments and update globals variables.
 def process_args():
@@ -87,7 +92,7 @@ def nonblank_lines(f):
             yield line
 
 def open_SS(file):
-    global v2detected, index1List, index2List, indexList
+    global v2detected, index1List, index2List, indexList, dualIndexed
     with open(file, 'rt') as ss_data_raw:
         # for rawLine in inputData:
         #     print(rawLine)
@@ -99,6 +104,7 @@ def open_SS(file):
         index1List = []
         index2List = []
         indexList = []
+        dualIndexed = 'false'
         for line in nonblank_lines(ss_data_raw):
             newSheet+=[line.split(',')]
         for num in range(0, len(newSheet)):
@@ -129,7 +135,7 @@ def open_SS(file):
                     index2 = header.index(col)
             for sampleNum in range(0,len(indexes)):
                 if index2 != 'single-indexed':
-                    # print(indexes[sampleNum][index1:])
+                    dualIndexed = 'true'
                     index1List.append(indexes[sampleNum][index1])
                     index2List.append(indexes[sampleNum][index2])
                     sampleIndex = indexes[sampleNum][index1] + '+' +  indexes[sampleNum][index2]
@@ -137,14 +143,17 @@ def open_SS(file):
                     index1List.append(indexes[sampleNum][index1])
                     sampleIndex = indexes[sampleNum][index1]
                 indexList.append(sampleIndex)
-    return index1List, index2List, indexList
+    return v2detected, index1List, index2List, indexList, dualIndexed
 
 # Hamming distance calculation function
 def hamming_distance(string1, string2):
     # Start with a distance of zero, and count up
     distance = 0
     # Loop over the indices of the string
-    L = len(string1) - 1
+    if len(string1) >= len(string2):
+        L = len(string1)
+    else:
+        L= len(string2)
     for i in range(L):
         if string1[i] != string2[i]:
             distance += 1
@@ -152,14 +161,16 @@ def hamming_distance(string1, string2):
     return distance
 
 def get_hamming_distance(inputList):
+    global hamDist, results, hamDistValues
     hamDist = 0
     results = ""
     resultsHeader = ""
     headerCol3 = 'Hamming Distance'
     headerCol4 = 'Comment'
-    mismatchSettings = []
+    hamDistValues = []
     while len(inputList) > 0:
         if inputList == index1List:
+            print("")
             print(bcolors.BLUE + "Checking i7 index (Index 1) sequences for collisions:" + bcolors.ENDC)
             print("")
             headerCol1 = '1st i7 Index'
@@ -190,23 +201,59 @@ def get_hamming_distance(inputList):
                 if hamDist == 0:
                     newRow = (bcolors.RED + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' +  'Barcode Collision! Cannot demultiplex these samples with these indexes alone.' + bcolors.ENDC + '\n')
                     results+=newRow
-                    mismatchSettings.append('cannotDemux')
+                    hamDistValues.append(0)
                 elif 0 < hamDist <= 2:
                     newRow = (bcolors.YELLOW + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' + 'No collision detected, however barcode mismatches must be set to 0 for demultiplexing.' + bcolors.ENDC + '\n')
                     results+=newRow
-                    mismatchSettings.append(0)
-                elif hamDist == 3:
-                    newRow = (str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' + 'No mismatches in index reads can be allowed during demultiplexing.' + bcolors.ENDC + '\n')
+                    hamDistValues.append(hamDist)
+                elif 3 <= hamDist <= 4:
+                    newRow = (bcolors.GREEN + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' + '1 mismatch allowed for this index/index combination during demultiplexing.' + bcolors.ENDC + '\n')
                     results+=newRow
-                    mismatchSettings.append(hamDist)
-                elif 2 < hamDist <= int(hamming_distance_maximum):
-                    newRow = (str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\n')
+                    hamDistValues.append(hamDist)
+                elif 4 < hamDist <= int(hamming_distance_maximum):
+                    newRow = (bcolors.TEAL + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' + '2 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC + '\n')
                     results+=newRow
-                    mismatchSettings.append(hamDist)
-
+                    hamDistValues.append(hamDist)
     print(results)
-    print(mismatchSettings)
-    return hamDist, results, mismatchSettings
+    return hamDist, results, hamDistValues
+
+def bcl_convert_mismatch_settings(inputList):
+    global index1mismatchSettings, index2mismatchSettings
+    settingsNotice1=('The following setting ' + bcolors.ITALIC + 'must' + bcolors.ENDC + ' be used with BCL Convert for this index/index combination:' + '\n')
+    settingsNotice2=('The following setting can be used with BCL Convert for this index/index combination:' + '\n')
+    settingsHeader='[BCLConvert_Settings]'
+    settingsDisclaimer=(bcolors.ITALIC + bcolors.RED + 'Note: this is one possibility and is not necessarily recommended.' + bcolors.ENDC)
+    settingsMessage=""
+    if inputList == index1List:
+        get_hamming_distance(inputList)
+        if any(val == 0 for val in hamDistValues):
+            index1mismatchSettings='BarcodeMismatchIndex1,0'
+            settingsMessage=(settingsNotice1 + '\n' + settingsHeader + '\n' + index1mismatchSettings)
+        elif any(val < 5 for val in hamDistValues):
+            index1mismatchSettings='BarcodeMismatchIndex1,1'
+            settingsMessage=(settingsNotice1 + '\n' + settingsHeader + '\n' + index1mismatchSettings)
+        elif all(val > 4 for val in hamDistValues):
+            index1mismatchSettings='BarcodeMismatchIndex1,2'
+            settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + index1mismatchSettings)
+    elif inputList == index2List:
+        get_hamming_distance(inputList)
+        if any(val == 0 for val in hamDistValues):
+            index2mismatchSettings='BarcodeMismatchIndex2,0'
+            settingsMessage=(settingsNotice1 + '\n' + settingsHeader + '\n' + index2mismatchSettings)
+        elif any(val < 5 for val in hamDistValues):
+            index2mismatchSettings='BarcodeMismatchIndex2,1'
+            settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + index2mismatchSettings + '\n' + settingsDisclaimer)
+        elif all(val > 4 for val in hamDistValues):
+            index2mismatchSettings='BarcodeMismatchIndex2,2'
+            settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + index2mismatchSettings + '\n' + settingsDisclaimer)
+    elif inputList == indexList:
+        get_hamming_distance(inputList)
+        if index1mismatchSettings == 'BarcodeMismatchIndex1,0' and index2mismatchSettings == 'BarcodeMismatchIndex2,0':
+            settingsMessage=(settingsNotice1 + '\n' + settingsHeader + '\n' + index1mismatchSettings + '\n' + index2mismatchSettings)
+        elif index1mismatchSettings == 'BarcodeMismatchIndex1,1' or index1mismatchSettings == 'BarcodeMismatchIndex1,2' or index2mismatchSettings == 'BarcodeMismatchIndex2,1' or index2mismatchSettings == 'BarcodeMismatchIndex2,2':
+            settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + index1mismatchSettings + '\n' + index2mismatchSettings + '\n' + settingsDisclaimer)
+    print(settingsMessage)
+    return
 
 ####################################################################################################
 #                                          Main function                                           #
@@ -230,10 +277,18 @@ def main():
 # Need to figure out how to exit and report no indexes found with hamming distance of hamming_distance_maximum or less
     if v2detected == 'true':
         print(bcolors.ITALIC + bcolors.PURPLE + "V2 sample sheet detected" + bcolors.ENDC)
-        print('')
-    get_hamming_distance(index1List)
-    get_hamming_distance(index2List)
-    get_hamming_distance(indexList)
+        if dualIndexed == 'true':
+            bcl_convert_mismatch_settings(index1List)
+            bcl_convert_mismatch_settings(index2List)
+            bcl_convert_mismatch_settings(indexList)
+        elif dualIndexed == 'false':
+            bcl_convert_mismatch_settings(index1List)
+        else:
+            print('Unknown error: value for "dualIndexed" should be ' + bcolors.GREEN + '"true"' + bcolors.ENDC + ' or ' + bcolors.RED + '"false"' + bcolors.ENDC + '\n' + 'Value is instead: ' + bcolors.BLUE + dualIndexed + bcolors.ENDC)
+            sys.exit(1)
+    else:
+        print('Still working on handling V1 sample sheets and bcl2fastq settings')
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()
