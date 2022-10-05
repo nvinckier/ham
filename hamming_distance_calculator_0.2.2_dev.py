@@ -10,22 +10,27 @@ hamming_distance_maximum = 3    # -d
 
 # Define colors for printing to terminal
 class bcolors:
-    HEADER = '\033[35m'
-    ITALIC = '\033[3m'
-    OKBLUE = '\033[34m'
-    OKGREEN = '\033[32m'
-    WARNING = '\033[33m'
-    FAIL = '\033[31m'
-    BOLD = '\033[1m'
+    TEAL = '\033[36m'
+    PURPLE = '\033[35m'
+    BLUE = '\033[34m'
+    YELLOW = '\033[33m'
+    GREEN = '\033[32m'
+    RED = '\033[31m'
     UNDERLINE = '\033[4m'
+    ITALIC = '\033[3m'
+    BOLD = '\033[1m'
     ENDC = '\033[0m'
-# print(bcolors.HEADER + "This is the text color for HEADER" + bcolors.ENDC)
-# print(bcolors.OKBLUE + "This is the text color for OKBLUE" + bcolors.ENDC)
-# print(bcolors.OKGREEN + "This is the text color for OKGREEN" + bcolors.ENDC)
-# print(bcolors.WARNING + "This is the text color for WARNING" + bcolors.ENDC)
-# print(bcolors.FAIL + "This is the text color for FAIL" + bcolors.ENDC)
-# print(bcolors.BOLD + "This is the text color for BOLD" + bcolors.ENDC)
-# print(bcolors.UNDERLINE + "This is the text color for UNDERLINE" + bcolors.ENDC)
+
+# print(bcolors.TEAL + "This is the TEAL color/style." + bcolors.ENDC)
+# print(bcolors.PURPLE + "This is the PURPLE color/style." + bcolors.ENDC)
+# print(bcolors.BLUE + "This is the BLUE color/style." + bcolors.ENDC)
+# print(bcolors.YELLOW + "This is the YELLOW color/style." + bcolors.ENDC)
+# print(bcolors.GREEN + "This is the GREEN color/style." + bcolors.ENDC)
+# print(bcolors.RED + "This is the RED color/style." + bcolors.ENDC)
+# print(bcolors.UNDERLINE + "This is the UNDERLINE color/style." + bcolors.ENDC)
+# print(bcolors.ITALIC + "This is the ITALIC color/style." + bcolors.ENDC)
+# print(bcolors.BOLD + "This is the BOLD color/style." + bcolors.ENDC)
+# print(bcolors.ENDC + "This is the ENDC color/style." + bcolors.ENDC)
 
 # process_args - Process command line arguments and update globals variables.
 def process_args():
@@ -150,13 +155,31 @@ def get_hamming_distance(inputList):
     hamDist = 0
     results = ""
     resultsHeader = ""
-    headerCol1 = '1st Index'
-    headerCol2 = '2nd Index'
     headerCol3 = 'Hamming Distance'
     headerCol4 = 'Comment'
-    resultsHeader = headerCol1 + '\t' + headerCol2 + '\t' + headerCol3 + '\t' + headerCol4 + '\n'
-    results += resultsHeader
+    mismatchSettings = []
     while len(inputList) > 0:
+        if inputList == index1List:
+            print(bcolors.BLUE + "Checking i7 index (Index 1) sequences for collisions:" + bcolors.ENDC)
+            print("")
+            headerCol1 = '1st i7 Index'
+            headerCol2 = '2nd i7 Index'
+            resultsHeader = headerCol1 + '\t' + headerCol2 + '\t' + headerCol3 + '\t' + headerCol4 + '\n'
+            results += resultsHeader
+        elif inputList == index2List:
+            print(bcolors.BLUE + "Checking i5 index (Index 2) sequences for collisions:" + bcolors.ENDC)
+            print("")
+            headerCol1 = '1st i5 Index'
+            headerCol2 = '2nd i5 Index'
+            resultsHeader = headerCol1 + '\t' + headerCol2 + '\t' + headerCol3 + '\t' + headerCol4 + '\n'
+            results += resultsHeader
+        elif inputList == indexList:
+            print(bcolors.BLUE + "Checking i7+i5 index (concatenation of Index 1 and Index 2) sequences for collisions:" + bcolors.ENDC)
+            print("")
+            headerCol1 = '1st Index Combination'
+            headerCol2 = '2nd Index Combination'
+            resultsHeader = headerCol1 + '\t' + headerCol2 + '\t' + headerCol3 + '\t' + headerCol4 + '\n'
+            results += resultsHeader
         for num1 in range(0,len(inputList)):
             str1 = inputList.pop(0)
             str1Length = len(str1)
@@ -165,16 +188,25 @@ def get_hamming_distance(inputList):
                 str2Length = len(str2)
                 hamDist = hamming_distance(str1,str2)
                 if hamDist == 0:
-                    newRow = (bcolors.FAIL + str1 + '\t' + str2 + '\t' + str(hamDist) + '\t' +  'Barcode Collision! Cannot demultiplex these samples.' + bcolors.ENDC + '\n')
+                    newRow = (bcolors.RED + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' +  'Barcode Collision! Cannot demultiplex these samples with these indexes alone.' + bcolors.ENDC + '\n')
                     results+=newRow
+                    mismatchSettings.append('cannotDemux')
                 elif 0 < hamDist <= 2:
-                    newRow = (bcolors.WARNING + str1 + '\t' + str2 + '\t' + str(hamDist) + '\t' + 'No mismatches in index reads can be allowed during demultiplexing.' + bcolors.ENDC + '\n')
+                    newRow = (bcolors.YELLOW + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' + 'No collision detected, however barcode mismatches must be set to 0 for demultiplexing.' + bcolors.ENDC + '\n')
                     results+=newRow
+                    mismatchSettings.append(0)
+                elif hamDist == 3:
+                    newRow = (str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' + 'No mismatches in index reads can be allowed during demultiplexing.' + bcolors.ENDC + '\n')
+                    results+=newRow
+                    mismatchSettings.append(hamDist)
                 elif 2 < hamDist <= int(hamming_distance_maximum):
-                    newRow = (str1 + '\t' + str2 + '\t' + str(hamDist) + '\n')
+                    newRow = (str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\n')
                     results+=newRow
+                    mismatchSettings.append(hamDist)
+
     print(results)
-    return hamDist, results
+    print(mismatchSettings)
+    return hamDist, results, mismatchSettings
 
 ####################################################################################################
 #                                          Main function                                           #
@@ -183,7 +215,7 @@ def main():
     global sample_sheet_file, hamming_distance_maximum, v2detected
     process_args()
     # Find sample sheet on system
-    print("Reporting indexes with hamming distance of " + bcolors.OKGREEN + "%s" % hamming_distance_maximum + bcolors.ENDC + " or less" )
+    print("Reporting indexes with hamming distance of " + bcolors.GREEN + "%s" % hamming_distance_maximum + bcolors.ENDC + " or less" )
     print('')
     if str(type(sample_sheet_file)) == "<class 'NoneType'>":
         sample_sheet_file = sys.argv[len(sys.argv) - 1]
@@ -197,16 +229,10 @@ def main():
 
 # Need to figure out how to exit and report no indexes found with hamming distance of hamming_distance_maximum or less
     if v2detected == 'true':
-        print(bcolors.ITALIC + bcolors.HEADER + "V2 sample sheet detected" + bcolors.ENDC)
+        print(bcolors.ITALIC + bcolors.PURPLE + "V2 sample sheet detected" + bcolors.ENDC)
         print('')
-    print(bcolors.OKBLUE + "Checking Index 1 sequences for collisions:" + bcolors.ENDC)
-    print('')
     get_hamming_distance(index1List)
-    print(bcolors.OKBLUE + "Checking Index 2 sequences for collisions:" + bcolors.ENDC)
-    print('')
     get_hamming_distance(index2List)
-    print(bcolors.OKBLUE + "Checking concatenation of Index 1 and 2 sequences for collisions:" + bcolors.ENDC)
-    print('')
     get_hamming_distance(indexList)
 
 if __name__ == "__main__":
