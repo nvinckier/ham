@@ -11,6 +11,7 @@ hamming_distance_maximum = 3    # -d
 # Define colors for printing to terminal
 class bcolors:
     HEADER = '\033[35m'
+    ITALIC = '\033[3m'
     OKBLUE = '\033[34m'
     OKGREEN = '\033[32m'
     WARNING = '\033[33m'
@@ -123,7 +124,7 @@ def open_SS(file):
                     index2 = header.index(col)
             for sampleNum in range(0,len(indexes)):
                 if index2 != 'single-indexed':
-                    print(indexes[sampleNum][index1:])
+                    # print(indexes[sampleNum][index1:])
                     index1List.append(indexes[sampleNum][index1])
                     index2List.append(indexes[sampleNum][index2])
                     sampleIndex = indexes[sampleNum][index1] + '+' +  indexes[sampleNum][index2]
@@ -131,7 +132,6 @@ def open_SS(file):
                     index1List.append(indexes[sampleNum][index1])
                     sampleIndex = indexes[sampleNum][index1]
                 indexList.append(sampleIndex)
-            print(index1List)
     return index1List, index2List, indexList
 
 # Hamming distance calculation function
@@ -164,7 +164,6 @@ def get_hamming_distance(inputList):
                 str2 = inputList[num2]
                 str2Length = len(str2)
                 hamDist = hamming_distance(str1,str2)
-
                 if hamDist == 0:
                     newRow = (bcolors.FAIL + str1 + '\t' + str2 + '\t' + str(hamDist) + '\t' +  'Barcode Collision! Cannot demultiplex these samples.' + bcolors.ENDC + '\n')
                     results+=newRow
@@ -174,7 +173,7 @@ def get_hamming_distance(inputList):
                 elif 2 < hamDist <= int(hamming_distance_maximum):
                     newRow = (str1 + '\t' + str2 + '\t' + str(hamDist) + '\n')
                     results+=newRow
-    print(len(results.split('\t')))
+    print(results)
     return hamDist, results
 
 ####################################################################################################
@@ -184,7 +183,8 @@ def main():
     global sample_sheet_file, hamming_distance_maximum, v2detected
     process_args()
     # Find sample sheet on system
-    print("Reporting indexes with hamming distance of %s or less" % hamming_distance_maximum)
+    print("Reporting indexes with hamming distance of " + bcolors.OKGREEN + "%s" % hamming_distance_maximum + bcolors.ENDC + " or less" )
+    print('')
     if str(type(sample_sheet_file)) == "<class 'NoneType'>":
         sample_sheet_file = sys.argv[len(sys.argv) - 1]
         print("Sample sheet is: " + str(sample_sheet_file))
@@ -197,13 +197,17 @@ def main():
 
 # Need to figure out how to exit and report no indexes found with hamming distance of hamming_distance_maximum or less
     if v2detected == 'true':
-        print("V2 sample sheet detected")
+        print(bcolors.ITALIC + bcolors.HEADER + "V2 sample sheet detected" + bcolors.ENDC)
         print('')
-    print("Checking Index 1 sequences for collisions")
+    print(bcolors.OKBLUE + "Checking Index 1 sequences for collisions:" + bcolors.ENDC)
+    print('')
     get_hamming_distance(index1List)
-    print("Checking Index 2 sequences for collisions")
+    print(bcolors.OKBLUE + "Checking Index 2 sequences for collisions:" + bcolors.ENDC)
+    print('')
     get_hamming_distance(index2List)
-    print("Checking concatenation of Index 1 and 2 sequences for collisions")
+    print(bcolors.OKBLUE + "Checking concatenation of Index 1 and 2 sequences for collisions:" + bcolors.ENDC)
+    print('')
     get_hamming_distance(indexList)
+
 if __name__ == "__main__":
     main()
