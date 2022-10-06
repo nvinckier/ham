@@ -100,11 +100,11 @@ def open_SS(file):
         num = 0
         header = []
         indexes = []
-        v2detected = 'false'
+        v2detected = False
         index1List = []
         index2List = []
         indexList = []
-        dualIndexed = 'false'
+        dualIndexed = False
         for line in nonblank_lines(ss_data_raw):
             newSheet+=[line.split(',')]
         for num in range(0, len(newSheet)):
@@ -115,7 +115,7 @@ def open_SS(file):
                 indexes=newSheet[num+2:]
                 # print(indexes)
             elif "[BCLConvert_Data]" in newLine:
-                v2detected = 'true'
+                v2detected = True
                 # print(num)
                 header=newSheet[num+1]
                 # print(header)
@@ -227,6 +227,7 @@ def bcl_convert_mismatch_settings(inputList):
     if inputList == index1List:
         get_hamming_distance(inputList)
         if any(val == 0 for val in hamDistValues):
+            i7collision = True
             index1mismatchSettings='BarcodeMismatchIndex1,0'
             settingsMessage=(settingsNotice1 + '\n' + settingsHeader + '\n' + index1mismatchSettings)
         elif any(val < 5 for val in hamDistValues):
