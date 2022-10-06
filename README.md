@@ -1,6 +1,7 @@
-# ham
-Hamming distance calculator for Illumina sample sheets
+# Introduction
 
+A python-based utility to parse Illumina sample sheets, determine hamming distances between sample indexes and provide possible index mismatch allowance settings for `BCL Convert` and `bcl2fastq`.
+```
                                  )\   /|
                               .-/'-|_/ |
            __            __,-' (   / \/
@@ -18,7 +19,7 @@ Hamming distance calculator for Illumina sample sheets
             L\              L\ 
 
 Usage:
-  hamming_distance_calculcator.py [Options] -i <SampleSheet CSV File>
+  ham [Options] -i <SampleSheet CSV File>
 
 Options:
   -d, --distance INT                  Set maximum hamming distance to show in report to INT (default: 3)
@@ -27,4 +28,7 @@ Options:
   -p, --program NUM                   Demultiplexing program to be used (default: BCL Convert). Possible options:
                                         1) BCL Convert
                                         2) bcl2fastq
+```
 
+# Requirements
+- Python 3
