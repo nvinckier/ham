@@ -218,11 +218,7 @@ def get_hamming_distance(inputList):
                     newRow = (bcolors.TEAL + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' + '2 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC + '\n')
                     results+=newRow
                     hamDistValues.append(hamDist)
-    # if any(val <= hamming_distance_maximum for val in hamDistValues):
-    #     print(results)
-    # else:
-    #     print('All hamming distances calculated are greater than ' + str(hamming_distance_maximum))
-    # return hamDist, results, hamDistValues
+    return hamDist, results, hamDistValues
 
 def bcl_convert_mismatch_settings(inputList):
     global barcodeMismatchIndex1Settings, barcodeMismatchIndex2Settings
@@ -264,8 +260,8 @@ def bcl_convert_mismatch_settings(inputList):
         elif all(val > 4 for val in hamDistValues):
             barcodeMismatchIndex2Settings='BarcodeMismatchIndex2,2'
             settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex2Settings + '\n' + settingsDisclaimer)
-        if verbose == True:
-            if any(val <= hamming_distance_maximum for val in hamDistValues):
+        if any(val <= hamming_distance_maximum for val in hamDistValues):
+            if verbose == True:
                 print(results)
             else:
                 print('All hamming distances calculated are greater than ' + str(hamming_distance_maximum))
@@ -353,10 +349,11 @@ def bcl2fastq_mismatch_settings(inputList):
             settingsMessage=(settingsNotice1 + '\n' + index1mismatchSettings + '(' + index1mismatchSettings + index2mismatchSettings.replace('--mismatches ',',') + ' is also accepted)')
         elif index1mismatchSettings == '--mismatches 1' or index1mismatchSettings == '--mismatches 2' or index2mismatchSettings == '--mismatches 1' or index2mismatchSettings == '--mismatches 2':
             settingsMessage=(settingsNotice2 + '\n' + index1mismatchSettings + index2mismatchSettings.replace('--mismatches ',',') + '\n' + settingsDisclaimer)
-        if any(val <= hamming_distance_maximum for val in hamDistValues):
-            print(results)
-        else:
-            print('All hamming distances calculated are greater than ' + str(hamming_distance_maximum))
+        # if any(val <= hamming_distance_maximum for val in hamDistValues):
+        #     print(results)
+        # else:
+        #     print('All hamming distances calculated are greater than ' + str(hamming_distance_maximum))
+        print(results)
         print(settingsMessage)
         print('')
     return
