@@ -341,7 +341,7 @@ def main():
     elif demux_program == 2:
         run_settings = bcl2fastq_mismatch_settings
     else:
-        print(demux_program + ' is not a valid demultiplexing program option. Please choose 1 for BCL Convert or 2 for bcl2fastq')
+        print(str(demux_program) + ' is not a valid demultiplexing program option. Please choose 1 for BCL Convert or 2 for bcl2fastq')
         sys.exit(1)
     
     if v2detected == True:
