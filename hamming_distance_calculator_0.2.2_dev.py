@@ -169,29 +169,31 @@ def hamming_distance(string1, string2):
     return distance
 
 def get_hamming_distance(inputList):
-    global hamDist, results, resultsHeader, hamDistValues
+    # global hamDist, results, resultsHeader, hamDistValues
     hamDist = 0
     results = ""
     resultsHeader = ""
     headerCol3 = 'Hamming Distance'
     headerCol4 = 'Comment'
     hamDistValues = []
+    noHamMatch = 'All hamming distances calculated are greater than '
     while len(inputList) > 0:
         if inputList == index1List:
-            resultsHeader = (bcolors.BLUE + "Checking i7 index (Index 1) sequences for collisions:" + bcolors.ENDC + '\n' + '\n')
+            resultsHeader = (bcolors.BLUE + "Checking i7 index (Index 1) sequences for collisions:" + bcolors.ENDC)
             headerCol1 = '1st i7 Index'
             headerCol2 = '2nd i7 Index'
             results = (headerCol1 + '\t' + headerCol2 + '\t' + headerCol3 + '\t' + headerCol4 + '\n')
         elif inputList == index2List:
-            resultsHeader = (bcolors.BLUE + "Checking i5 index (Index 2) sequences for collisions:" + bcolors.ENDC + '\n' + '\n')
+            resultsHeader = (bcolors.BLUE + "Checking i5 index (Index 2) sequences for collisions:" + bcolors.ENDC)
             headerCol1 = '1st i5 Index'
             headerCol2 = '2nd i5 Index'
-            results = headerCol1 + '\t' + headerCol2 + '\t' + headerCol3 + '\t' + headerCol4 + '\n'
+            results = (headerCol1 + '\t' + headerCol2 + '\t' + headerCol3 + '\t' + headerCol4 + '\n')
         elif inputList == indexList:
-            resultsHeader = (bcolors.BLUE + "Checking i7+i5 index (concatenation of Index 1 and Index 2) sequences for collisions:" + bcolors.ENDC + '\n' + '\n')
+            resultsHeader = (bcolors.BLUE + "Checking i7+i5 index (concatenation of Index 1 and Index 2) sequences for collisions:" + bcolors.ENDC)
             headerCol1 = '1st Index Combination'
             headerCol2 = '2nd Index Combination'
-            results = headerCol1 + '\t' + headerCol2 + '\t' + headerCol3 + '\t' + headerCol4 + '\n'
+            results = (headerCol1 + '\t' + headerCol2 + '\t' + headerCol3 + '\t' + headerCol4 + '\n')
+        # print(inputList)
         for num1 in range(0,len(inputList)):
             str1 = inputList.pop(0)
             str1Length = len(str1)
@@ -199,6 +201,7 @@ def get_hamming_distance(inputList):
                 str2 = inputList[num2]
                 str2Length = len(str2)
                 hamDist = hamming_distance(str1,str2)
+                # print(hamDist)
                 if hamDist == 0:
                     newRow = (bcolors.RED + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' +  'Barcode Collision!' + bcolors.ENDC + '\n')
                     results+=newRow
@@ -215,153 +218,198 @@ def get_hamming_distance(inputList):
                     newRow = (bcolors.TEAL + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (len(str(headerCol3)) - len(str(hamDist)))) + '\t' + '2 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC + '\n')
                     results+=newRow
                     hamDistValues.append(hamDist)
-    return hamDist, results, resultsHeader, hamDistValues
+        if all(val > hamming_distance_maximum for val in hamDistValues):
+            results = (noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC+ '\n')
+        # print(results)
+    return results, resultsHeader, hamDistValues
 
 def bcl_convert_mismatch_settings(inputList):
     global barcodeMismatchIndex1Settings, barcodeMismatchIndex2Settings
-    settingsNotice1=('The following sample sheet setting ' + bcolors.ITALIC + 'must' + bcolors.ENDC + ' be used with BCL Convert for this index/index combination:')
-    settingsNotice2=('The following sample sheet setting can be used with BCL Convert for this index/index combination:')
+    settingsNotice1 = ('The following command-line setting(s) ' + bcolors.ITALIC + 'must' + bcolors.ENDC + ' be used with bcl2fastq for this index/index combination:')
+    settingsNotice2 = ('The following command-line setting(s) can be used with bcl2fastq for this index/index combination:')
     settingsHeader='[BCLConvert_Settings]'
-    settingsDisclaimer=('\n' + bcolors.ITALIC + bcolors.RED + 'Note: this is one possibility and is not necessarily recommended.' + bcolors.ENDC)
-    settingsFail=(bcolors.RED + 'Barcode Collision! Unable to demultiplex. Please verify indexes in sample sheet are correct.' + bcolors.ENDC)
+    settingsDisclaimer = ('\n' + bcolors.ITALIC + bcolors.RED + 'DISCLAIMER: These are options, not recommendations. Please what is appropriate for your use case.' + bcolors.ENDC)
+    settingsFail = (bcolors.RED + 'Barcode Collision! Unable to demultiplex. Please verify indexes in sample sheet are correct.' + bcolors.ENDC)
     settingsMessage = ''
-    index1mismatchSettings = ''
-    index2mismatchSettings = ''
+    barcodeMismatchIndex1Settings = ''
+    barcodeMismatchIndex2Settings = ''
     noHamMatch = 'All hamming distances calculated are greater than '
     if inputList == index1List:
-        get_hamming_distance(inputList)
-        if any(val == 0 for val in hamDistValues):
+        barcodeMismatchIndex1Settings = ''
+        i7results=get_hamming_distance(inputList)
+        if any(val == 0 for val in i7results[2]):
             i7collision = True
             barcodeMismatchIndex1Settings='BarcodeMismatchIndex1,0'
             settingsMessage=(settingsNotice1 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings)
-        elif any(val < 5 for val in hamDistValues):
+        elif any(val < 5 for val in i7results[2]):
             barcodeMismatchIndex1Settings='BarcodeMismatchIndex1,1'
-            settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings)
-        elif all(val > 4 for val in hamDistValues):
+            settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings + '\n' + settingsDisclaimer)
+        elif all(val > 4 for val in i7results[2]):
             barcodeMismatchIndex1Settings='BarcodeMismatchIndex1,2'
-            settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings)
-        if verbose == True or dualIndexed == False:
-            if any(val <= hamming_distance_maximum for val in hamDistValues):
-                print(resultsHeader)
-                print(results)
+            settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings + '\n' + settingsDisclaimer)
+        if dualIndexed == False:
+            if any(val <= hamming_distance_maximum for val in i7results[2]):
+                print(i7results[1])
+                print(i7results[0])
+                print(settingsMessage)
+                print("----------" * 10)
             else:
-                print(resultsHeader)
-                print("WHERE")
+                print(i7results[1])
                 print(noHamMatch + bcolors.UNDERLINE + str(hamming_distance_maximum) + bcolors.ENDC+ '\n')
-            print(settingsMessage)
-            print('')
+            sys.exit(0)
+        elif verbose == True:
+            if any(val <= hamming_distance_maximum for val in i7results[2]):
+                print(i7results[1])
+                print(i7results[0])
+                print(settingsMessage)
+                print("//////////" * 10)
+            else:
+                print(i7results[1])
+                print(noHamMatch + bcolors.UNDERLINE + str(hamming_distance_maximum) + bcolors.ENDC+ '\n')
+        print(barcodeMismatchIndex1Settings)
     elif inputList == index2List:
-        get_hamming_distance(inputList)
-        if any(val == 0 for val in hamDistValues):
+        barcodeMismatchIndex2Settings = ''
+        i5results=get_hamming_distance(inputList)
+        if any(val == 0 for val in i5results[2]):
             barcodeMismatchIndex2Settings='BarcodeMismatchIndex2,0'
             settingsMessage=(settingsNotice1 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex2Settings)
-        elif any(val < 5 for val in hamDistValues):
+        elif any(val < 5 for val in i5results[2]):
             barcodeMismatchIndex2Settings='BarcodeMismatchIndex2,1'
             settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex2Settings + '\n' + settingsDisclaimer)
-        elif all(val > 4 for val in hamDistValues):
+        elif all(val > 4 for val in i5results[2]):
             barcodeMismatchIndex2Settings='BarcodeMismatchIndex2,2'
             settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex2Settings + '\n' + settingsDisclaimer)
-        if any(val <= hamming_distance_maximum for val in hamDistValues):
+        if any(val <= hamming_distance_maximum for val in i5results[2]):
             if verbose == True:
-                print(resultsHeader)
-                print(results)
+                print(i5results[1])
+                print(i5results[0])
+                print(settingsMessage)
             else:
-                print(resultsHeader)
+                print(i5results[1])
                 print(noHamMatch + bcolors.UNDERLINE + str(hamming_distance_maximum) + bcolors.ENDC+ '\n')
-            print(settingsMessage)
-            print('')
+        print(barcodeMismatchIndex2Settings)
     elif inputList == indexList:
-        get_hamming_distance(inputList)
-        if any(val == 0 for val in hamDistValues):
+        i7i5results=get_hamming_distance(inputList)
+        if any(val == 0 for val in i7i5results[2]):
+            print("THIS ONE: 1")
             settingsMessage=settingsFail
         elif barcodeMismatchIndex2Settings == None:
+            print("THIS ONE: 2")
             settingsMessage=(settingsNotice1 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings)
         elif barcodeMismatchIndex1Settings == 'BarcodeMismatchIndex1,0' and barcodeMismatchIndex2Settings == 'BarcodeMismatchIndex2,0':
+            print("THIS ONE: 3")
             settingsMessage=(settingsNotice1 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings + '\n' + barcodeMismatchIndex2Settings)
         elif barcodeMismatchIndex1Settings == 'BarcodeMismatchIndex1,1' or barcodeMismatchIndex1Settings == 'BarcodeMismatchIndex1,2' or barcodeMismatchIndex2Settings == 'BarcodeMismatchIndex2,1' or barcodeMismatchIndex2Settings == 'BarcodeMismatchIndex2,2':
+            print("THIS ONE: 4")
             settingsMessage=(settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings + '\n' + barcodeMismatchIndex2Settings + '\n' + settingsDisclaimer)
-        if any(val <= hamming_distance_maximum for val in hamDistValues):
-            print(resultsHeader)
-            print(results)
         else:
-            print(resultsHeader)
+            print("  ERROR: Unexpected BarcodeMismatch setting(s)")
+            print("  Value for Index1 barcode mismatch setting: " + barcodeMismatchIndex1Settings)
+            print("  Value for Index2 barcode mismatch setting: " + barcodeMismatchIndex2Settings)
+            sys.exit(1)
+        if any(val <= hamming_distance_maximum for val in i7i5results[2]):
+            print(i7i5results[1])
+            print(i7i5results[0])
+        else:
+            print(i7i5results[1])
             print(noHamMatch + bcolors.UNDERLINE + str(hamming_distance_maximum) + bcolors.ENDC+ '\n')
         print(settingsMessage)
-        print('')
     return
 
 def bcl2fastq_mismatch_settings(inputList):
     global index1mismatchSettings, index2mismatchSettings
-    settingsNotice1 = ('The following command-line setting ' + bcolors.ITALIC + 'must' + bcolors.ENDC + ' be used with bcl2fastq for this index/index combination:')
-    settingsNotice2 = ('The following command-line setting can be used with bcl2fastq for this index/index combination:')
-    settingsDisclaimer = ('\n' + bcolors.ITALIC + bcolors.RED + 'Note: this is one possibility and is not necessarily recommended.' + bcolors.ENDC)
+    settingsNotice1 = ('The following command-line setting(s) ' + bcolors.ITALIC + 'must' + bcolors.ENDC + ' be used with bcl2fastq for this index/index combination:')
+    settingsNotice2 = ('The following command-line setting(s) can be used with bcl2fastq for this index/index combination:')
+    settingsDisclaimer = ('\n' + bcolors.ITALIC + bcolors.RED + 'DISCLAIMER: These are options, not recommendations. Please what is appropriate for your use case.' + bcolors.ENDC)
     settingsFail = (bcolors.RED + 'Barcode Collision! Unable to demultiplex. Please verify indexes in sample sheet are correct.' + bcolors.ENDC)
     settingsMessage = ''
+    index1mismatchSettings = ''
+    index2mismatchSettings = ''
     if inputList == index1List:
-        get_hamming_distance(inputList)
-        if any(val == 0 for val in hamDistValues):
+        i7results=get_hamming_distance(inputList)
+        if any(val == 0 for val in i7results[2]):
             i7collision = True
             index1mismatchSettings = 'collision'
-        elif any(0 < val < 3 for val in hamDistValues):
+        elif any(0 < val < 3 for val in i7results[2]):
             index1mismatchSettings = '--mismatches 0'
             settingsMessage = (settingsNotice1 + '\n' + index1mismatchSettings)
-        elif any(val < 5 for val in hamDistValues):
+        elif any(val < 5 for val in i7results[2]):
             index1mismatchSettings = '--mismatches 1'
             settingsMessage = (settingsNotice2 + '\n' + index1mismatchSettings + '\n' + settingsDisclaimer)
-        elif all(val > 4 for val in hamDistValues):
+        elif all(val > 4 for val in i7results[2]):
             index1mismatchSettings = '--mismatches 2'
             settingsMessage = (settingsNotice2 + '\n' + index1mismatchSettings + '\n' + settingsDisclaimer)
         if verbose == True or dualIndexed == False:
-            if any(val <= hamming_distance_maximum for val in hamDistValues):
-                print(results)
+            if any(val <= hamming_distance_maximum for val in i7results[2]):
+                print(i7results[1])
+                print(i7results[0])
             else:
                 print('All hamming distances calculated are greater than ' + str(hamming_distance_maximum))
-            print(settingsMessage)
+                print(settingsMessage)
             print('')
     elif inputList == index2List:
-        get_hamming_distance(inputList)
-        if any(val == 0 for val in hamDistValues):
+        i5results=get_hamming_distance(inputList)
+        if any(val == 0 for val in i5results[2]):
             index2mismatchSettings = 'collision'
-        elif any(0 < val < 3 for val in hamDistValues):
+        elif any(0 < val < 3 for val in i5results[2]):
             index2mismatchSettings = '--mismatches 0'
             settingsMessage = (settingsNotice1 + '\n' + index2mismatchSettings)
-        elif any(val < 5 for val in hamDistValues):
+        elif any(val < 5 for val in i5results[2]):
             index2mismatchSettings = '--mismatches 1'
             settingsMessage = (settingsNotice2 + '\n' + index2mismatchSettings + '\n' + settingsDisclaimer)
-        elif all(val > 4 for val in hamDistValues):
+        elif all(val > 4 for val in i5results[2]):
             index2mismatchSettings = '--mismatches 2'
             settingsMessage = (settingsNotice2 + '\n' + index2mismatchSettings + '\n' + settingsDisclaimer)
         if verbose == True:
-            if any(val <= hamming_distance_maximum for val in hamDistValues):
-                print(results)
+            if any(val <= hamming_distance_maximum for val in i5results[2]):
+                print(i5results[1])
+                print(i5results[0])
             else:
                 print('All hamming distances calculated are greater than ' + str(hamming_distance_maximum))
-            print(settingsMessage)
+                print(settingsMessage)
             print('')
     elif inputList == indexList:
-        get_hamming_distance(inputList)
-        if any(val == 0 for val in hamDistValues):
+        i7i5results=get_hamming_distance(inputList)
+        if any(val == 0 for val in i7i5results[2]):
             settingsMessage=settingsFail
-        elif index2mismatchSettings == None:
-            settingsMessage=(settingsNotice1 + '\n' + index1mismatchSettings)
-        elif index1mismatchSettings == 'collision' and index2mismatchSettings == 'collision':
-            settingsMessage=settingsFail
-        elif index1mismatchSettings == 'collision' and index2mismatchSettings == '--mismatches 0':
-            settingsMessage=(settingsNotice1 + '\n' + index2mismatchSettings)
-        elif index1mismatchSettings == '--mismatches 0' and index2mismatchSettings == 'collision':
-            settingsMessage=(settingsNotice1 + '\n' + index1mismatchSettings)
-        elif index1mismatchSettings == '--mismatches 0' and index2mismatchSettings == '--mismatches 0':
-            settingsMessage=(settingsNotice1 + '\n' + index1mismatchSettings + '(' + index1mismatchSettings + index2mismatchSettings.replace('--mismatches ',',') + ' is also accepted)')
-        elif index1mismatchSettings == '--mismatches 1' or index1mismatchSettings == '--mismatches 2' or index2mismatchSettings == '--mismatches 1' or index2mismatchSettings == '--mismatches 2':
-            settingsMessage=(settingsNotice2 + '\n' + index1mismatchSettings + index2mismatchSettings.replace('--mismatches ',',') + '\n' + settingsDisclaimer)
-        # if any(val <= hamming_distance_maximum for val in hamDistValues):
-        #     print(results)
-        # else:
-        #     print('All hamming distances calculated are greater than ' + str(hamming_distance_maximum))
-        print(results)
+        elif any(0 < val < 3 for val in i7i5results[2]):
+            indexMismatchSettings = '--mismatches 0'
+            settingsMessage = (settingsNotice1 + '\n' + indexMismatchSettings)
+        elif any(val < 5 for val in i7i5results[2]):
+            indexMismatchSettings = '--mismatches 1'
+            indexMismatchSettings += '--mismatches 0'
+            settingsMessage = (settingsNotice2 + '\n' + indexMismatchSettings + '\n' + settingsDisclaimer)
+        elif all(val > 4 for val in i7i5results[2]):
+            indexMismatchSettings = '--mismatches 2'
+            indexMismatchSettings += ('\n' + '--mismatches 1')
+            indexMismatchSettings += ('\n' + '--mismatches 0')
+            settingsMessage = (settingsNotice2 + '\n' + indexMismatchSettings + '\n' + settingsDisclaimer)
+    # elif inputList == indexList:
+    #     i7i5results=get_hamming_distance(inputList)
+    #     if any(val == 0 for val in i7i5results[2]):
+    #         settingsMessage=settingsFail
+    #     elif index2mismatchSettings == None:
+    #         settingsMessage=(settingsNotice1 + '\n' + index1mismatchSettings)
+    #     elif index1mismatchSettings == 'collision' and index2mismatchSettings == 'collision':
+    #         settingsMessage=settingsFail
+    #     elif index1mismatchSettings == 'collision' and index2mismatchSettings == '--mismatches 0':
+    #         settingsMessage=(settingsNotice1 + '\n' + index2mismatchSettings)
+    #     elif index1mismatchSettings == '--mismatches 0' and index2mismatchSettings == 'collision':
+    #         settingsMessage=(settingsNotice1 + '\n' + index1mismatchSettings)
+    #     elif index1mismatchSettings == '--mismatches 0' and index2mismatchSettings == '--mismatches 0':
+    #         settingsMessage=(settingsNotice1 + '\n' + index1mismatchSettings + '(' + index1mismatchSettings + index2mismatchSettings.replace('--mismatches ',',') + ' is also accepted)')
+    #     elif index1mismatchSettings == '--mismatches 1' or index1mismatchSettings == '--mismatches 2' or index2mismatchSettings == '--mismatches 1' or index2mismatchSettings == '--mismatches 2':
+    #         settingsMessage=(settingsNotice2 + '\n' + index1mismatchSettings + index2mismatchSettings.replace('--mismatches ',',') + '\n' + settingsDisclaimer)
+    #     # if any(val <= hamming_distance_maximum for val in hamDistValues):
+    #     #     print(results)
+    #     # else:
+    #     #     print('All hamming distances calculated are greater than ' + str(hamming_distance_maximum))
+        print(i7i5results[1])
+        print(i7i5results[0])
         print(settingsMessage)
         print('')
     return
+
 ####################################################################################################
 #                                          Main function                                           #
 ####################################################################################################
@@ -370,7 +418,7 @@ def main():
     global sample_sheet_file, hamming_distance_maximum, v2detected, index2mismatchSettings, barcodeMismatchIndex2Settings
     process_args()
     # Find sample sheet on system
-    print("Reporting indexes with hamming distance of " + bcolors.GREEN + "%s" % hamming_distance_maximum + bcolors.ENDC + " or less" )
+    print("Reporting indexes with hamming distance of " + bcolors.UNDERLINE + bcolors.TEAL + "%s" % hamming_distance_maximum + bcolors.ENDC + " or less" )
     print('')
     if str(type(sample_sheet_file)) == "<class 'NoneType'>":
         sample_sheet_file = sys.argv[len(sys.argv) - 1]
@@ -406,11 +454,9 @@ def main():
         run_settings(index1List)
         run_settings(index2List)
         run_settings(indexList)
-        print("DualIndexed")
     elif dualIndexed == False:
         # index2mismatchSettings = None
         # barcodeMismatchIndex2Settings = None
-        print("SingleIndexed")
         run_settings(index1List)
     else:
         print('Unknown error: value for "dualIndexed" should be ' + bcolors.GREEN + '"true"' + bcolors.ENDC + ' or ' + bcolors.RED + '"false"' + bcolors.ENDC + '\n' + 'Value is instead: ' + bcolors.BLUE + dualIndexed + bcolors.ENDC)
