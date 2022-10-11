@@ -221,6 +221,7 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
     barcodeMismatchIndex2Settings = None
     results = []
     resultsHeader = []
+    resultsTable = {}
     resultsMessage = ""
     headerCol3 = 'Hamming Distance'
     headerCol4 = 'Comment'
@@ -233,7 +234,7 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             resultsMessage = ('\n' + bcolors.BLUE + "Checking i7 index (Index 1) sequences for collisions:" + bcolors.ENDC)
             headerCol1 = '1st i7 Index'
             headerCol2 = '2nd i7 Index'
-            resultsHeader = [(headerCol1, headerCol2, headerCol3, headerCol4)]
+            resultsHeader = [headerCol1, headerCol2, headerCol3, headerCol4]
             i7results = get_hamming_distance(indexDict[key])
             if all(val > hamming_distance_maximum for val in i7results[1]):
                 results = ('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC)
@@ -260,7 +261,7 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             resultsMessage = ('\n' + bcolors.BLUE + "Checking i5 index (Index 2) sequences for collisions:" + bcolors.ENDC)
             headerCol1 = '1st i5 Index'
             headerCol2 = '2nd i5 Index'
-            resultsHeader = [(headerCol1, headerCol2, headerCol3, headerCol4)]
+            resultsHeader = [headerCol1, headerCol2, headerCol3, headerCol4]
             i5results = get_hamming_distance(indexDict[key])
             if all(val > hamming_distance_maximum for val in i5results[1]):
                 results = ('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC)
@@ -287,7 +288,7 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             resultsMessage = ('\n' + bcolors.BLUE + "Checking i7+i5 index (concatenation of Index 1 and Index 2) sequences for collisions." + bcolors.ENDC + ' (' + bcolors.ITALIC + 'i7 and i5 sequences are assessed individually for BCL Convert' +  bcolors.ENDC + '):')
             headerCol1 = '1st Index Combination'
             headerCol2 = '2nd Index Combination'
-            resultsHeader = [(headerCol1, headerCol2, headerCol3, headerCol4)]
+            resultsHeader = [headerCol1, headerCol2, headerCol3, headerCol4]
             
             i7_i5results = get_hamming_distance(indexDict[key])
             
@@ -316,9 +317,38 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             elif all(val <= hamming_distance_maximum for val in i7_i5results[1]):
                 results += ((i7_i5results[0]))
                 print('3')
-            print(resultsHeader[0], sep='\t')
-            # print(len(results))
-            # print(results)
+            
+            for i in range(0,len(resultsHeader)):
+                resultsTable[resultsHeader[i]] = []
+                for j in range(0,len(results)):
+                    # print(resultsHeader[i])
+                    resultsTable[resultsHeader[i]]
+                    # resultsTable[resultsHeader[j]] += results[i][j]
+            print(f'{resultsHeader[0]: <25}{resultsHeader[1]: <25}{resultsHeader[2]: <25}{resultsHeader[3]}')
+            for key, value in resultsTable.items():
+                print(key)
+                print(value)
+                # print({key: <10}{value[0]: <15})
+
+            #     print(len(key))
+            #     print(key)
+            #     print(resultsTable[key])
+                # for i in range(0,len(results)):
+                # print(*results[i], sep=(' ' * 10))
+            # print(resultsHeader.split(','))
+            # for a in resultsHeader:
+            #     print('\t'.join([str(b) for b in a]))
+            # for i in results:
+            #     print(('\t' * 2).join([str(j) for j in i]))
+                # print(results)
+            #     for j in range(0,len(resultsHeader[i])):
+            #     for j in range(0,len(resultsHeader[i])):
+            #         print(resultsHeader[i][j])
+            #     print(len(i))
+            #     print(resultsHeader[0][i])
+                # for x in range(0,len([i])):
+                #     print(x)
+                # print(i[x])
             # print('\n' + settingsMessage)
     return resultsMessage, results, settingsMessage
 
