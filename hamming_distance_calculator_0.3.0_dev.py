@@ -235,9 +235,11 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             headerCol1 = '1st i7 Index'
             headerCol2 = '2nd i7 Index'
             resultsHeader = [headerCol1, headerCol2, headerCol3, headerCol4]
+            results = []
             i7results = get_hamming_distance(indexDict[key])
+
             if all(val > hamming_distance_maximum for val in i7results[1]):
-                results = ('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC)
+                results = ['\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC]
             else:
                 results = i7results[0]
             if any(val == 0 for val in i7results[1]):
@@ -262,9 +264,11 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             headerCol1 = '1st i5 Index'
             headerCol2 = '2nd i5 Index'
             resultsHeader = [headerCol1, headerCol2, headerCol3, headerCol4]
+            results = []
             i5results = get_hamming_distance(indexDict[key])
+
             if all(val > hamming_distance_maximum for val in i5results[1]):
-                results = ('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC)
+                results = ['\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC]
             else:
                 results = i5results[0]
             if any(val == 0 for val in i5results[1]):
@@ -289,7 +293,7 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             headerCol1 = '1st Index Combination'
             headerCol2 = '2nd Index Combination'
             resultsHeader = [headerCol1, headerCol2, headerCol3, headerCol4]
-            
+            results = []
             i7_i5results = get_hamming_distance(indexDict[key])
             
             if any(val == 0 for val in i7_i5results) or (i7collision == True and i5collision == True):
@@ -307,27 +311,38 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
                 sys.exit(1)
             
             print(resultsMessage)
-            
-            if all(val > hamming_distance_maximum for val in i7_i5results[1]) and verbose == True and i7collision == False and i5collision == False:
-                results = ('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations')
-                print('1')
+            if all(val > hamming_distance_maximum for val in i7_i5results[1]) or verbose == True and (i7collision == False and i5collision == False):
+                results = ['\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations']
             elif all(val > hamming_distance_maximum for val in i7_i5results[1]) and verbose == True and (i7collision == True or i5collision == True):
-                results = ('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + ' Collision detected in i7 and/or i5 indexes.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + bcolors.ITALIC + ' Re-run with the ' + bcolors.ENDC + '-v, --verbose' + bcolors.ITALIC + ' option to see more details.' + bcolors.ENDC)
-                print('2')
-            elif all(val <= hamming_distance_maximum for val in i7_i5results[1]):
-                results += ((i7_i5results[0]))
-                print('3')
+                results = ['\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + ' Collision detected in i7 and/or i5 indexes.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + bcolors.ITALIC + ' Re-run with the ' + bcolors.ENDC + '-v, --verbose' + bcolors.ITALIC + ' option to see more details.' + bcolors.ENDC]
+            elif any(val <= hamming_distance_maximum for val in i7_i5results[1]):
+                results += i7_i5results[0]
             
+            # print(resultsHeader)
+            # print(len(results))
+            # print(len(results[0]))
+            # print(results[0][1])
             for i in range(0,len(resultsHeader)):
                 resultsTable[resultsHeader[i]] = []
                 for j in range(0,len(results)):
+                    # print(type(results))
+                    # print('i value: ' + str(i))
+                    # print('j value: ' + str(j))
                     # print(resultsHeader[i])
-                    resultsTable[resultsHeader[i]]
-                    # resultsTable[resultsHeader[j]] += results[i][j]
-            print(f'{resultsHeader[0]: <25}{resultsHeader[1]: <25}{resultsHeader[2]: <25}{resultsHeader[3]}')
-            for key, value in resultsTable.items():
-                print(key)
-                print(value)
+                    # print(resultsHeader[i])
+                    # print(results[j][i])
+                    # print('')
+                    resultsTable[resultsHeader[i]].append(results[j][i])
+            # print(results)
+            for key in resultsTable.keys():
+                print('\n' + key)
+                for i in range(0,len(resultsTable[key])):
+                    print(str(resultsTable[key][i]) + ' ' * (len(key) - len(str(resultsTable[key][i]))) + ' <---')
+            # print(f'{resultsHeader[0]: <25}{resultsHeader[1]: <25}{resultsHeader[2]: <25}{resultsHeader[3]}')
+            # print(len(resultsTable.keys()[0]))
+            # for key, value in resultsTable.items():
+            #     print(key)
+            #     print(value)
                 # print({key: <10}{value[0]: <15})
 
             #     print(len(key))
