@@ -175,7 +175,7 @@ def get_hamming_distance(inputList):
     results = []
     hamDistValues = []
     noHamMatch = 'All hamming distances calculated are greater than '
-    
+
     for num1 in range(0,len(inputList)):
         str1 = inputList.pop(0)
         str1Length = len(str1)
@@ -184,24 +184,16 @@ def get_hamming_distance(inputList):
             str2Length = len(str2)
             hamDist = hamming_distance(str1,str2)
             if hamDist == 0:
-                newRow = (bcolors.RED + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (16 - len(str(hamDist)))) + '\t' +  'Barcode Collision!' + bcolors.ENDC + '\n')
-                # results+=newRow
-                results += [(str1,str2,hamDist,(bcolors.RED + 'Barcode Collision!' + bcolors.ENDC))]
+                results.append([str1,str2,hamDist,(bcolors.RED + 'Barcode Collision!' + bcolors.ENDC)])
                 hamDistValues.append(0)
             elif 0 < hamDist <= 2:
-                newRow = (bcolors.YELLOW + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (16 - len(str(hamDist)))) + '\t' + '0 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC + '\n')
-                # results+=newRow
-                results += [(str1,str2,hamDist,(bcolors.YELLOW + '0 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC))]
+                results.append([str1,str2,hamDist,(bcolors.YELLOW + '0 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC)])
                 hamDistValues.append(hamDist)
             elif 3 <= hamDist <= 4:
-                newRow = (bcolors.GREEN + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (16 - len(str(hamDist)))) + '\t' + '1 mismatch allowed for this index/index combination during demultiplexing.' + bcolors.ENDC + '\n')
-                # results+=newRow
-                results += [(str1,str2,hamDist,(bcolors.GREEN + '1 mismatch allowed for this index/index combination during demultiplexing.' + bcolors.ENDC))]
+                results.append([str1,str2,hamDist,(bcolors.GREEN + '1 mismatch allowed for this index/index combination during demultiplexing.' + bcolors.ENDC)])
                 hamDistValues.append(hamDist)
             elif 4 < hamDist <= hamming_distance_maximum:
-                newRow = (bcolors.TEAL + str1 + '\t' + str2 + '\t' + str(hamDist) + (" " * (16 - len(str(hamDist)))) + '\t' + '2 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC + '\n')
-                # results+=newRow
-                results += [(str1,str2,hamDist,(bcolors.TEAL + '2 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC))]
+                results.append([str1,str2,hamDist,(bcolors.TEAL + '2 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC)])
                 hamDistValues.append(hamDist)
             elif hamDist > hamming_distance_maximum:
                 hamDistValues.append(hamDist)
@@ -221,8 +213,8 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
     barcodeMismatchIndex2Settings = None
     results = []
     resultsHeader = []
-    resultsTable = {}
-    resultsMessage = ""
+    resultsTable = []
+    resultsMessage = ''
     headerCol3 = 'Hamming Distance'
     headerCol4 = 'Comment'
     noHamMatch = 'All hamming distances calculated are greater than '
@@ -237,7 +229,7 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             resultsHeader = [headerCol1, headerCol2, headerCol3, headerCol4]
             results = []
             i7results = get_hamming_distance(indexDict[key])
-
+            # print(type(i7results))
             if all(val > hamming_distance_maximum for val in i7results[1]):
                 results = ['\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC]
             else:
@@ -316,55 +308,26 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             elif all(val > hamming_distance_maximum for val in i7_i5results[1]) and verbose == True and (i7collision == True or i5collision == True):
                 results = ['\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + ' Collision detected in i7 and/or i5 indexes.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + bcolors.ITALIC + ' Re-run with the ' + bcolors.ENDC + '-v, --verbose' + bcolors.ITALIC + ' option to see more details.' + bcolors.ENDC]
             elif any(val <= hamming_distance_maximum for val in i7_i5results[1]):
-                results += i7_i5results[0]
-            
-            # print(resultsHeader)
-            # print(len(results))
-            # print(len(results[0]))
-            # print(results[0][1])
-            for i in range(0,len(resultsHeader)):
-                resultsTable[resultsHeader[i]] = []
-                for j in range(0,len(results)):
-                    # print(type(results))
-                    # print('i value: ' + str(i))
-                    # print('j value: ' + str(j))
-                    # print(resultsHeader[i])
-                    # print(resultsHeader[i])
-                    # print(results[j][i])
-                    # print('')
-                    resultsTable[resultsHeader[i]].append(results[j][i])
-            # print(results)
-            for key in resultsTable.keys():
-                print('\n' + key)
-                for i in range(0,len(resultsTable[key])):
-                    print(str(resultsTable[key][i]) + ' ' * (len(key) - len(str(resultsTable[key][i]))) + ' <---')
-            # print(f'{resultsHeader[0]: <25}{resultsHeader[1]: <25}{resultsHeader[2]: <25}{resultsHeader[3]}')
-            # print(len(resultsTable.keys()[0]))
-            # for key, value in resultsTable.items():
-            #     print(key)
-            #     print(value)
-                # print({key: <10}{value[0]: <15})
+                results.append(i7_i5results[0])
+            print('-' * 200)
+            print(type(results))    
+            print(results)    
+            for i in range(0,len(results)):
+                print(i)
+                print(len(str(results[i])))
+            print('-' * 200)
+            resultsTable = [resultsHeader]
+            # for i in range(0,len(results)):
+            #     print(i)
+            #     resultsTable.append(results[i])
+            # print(*resultsTable[0], sep='\t')
+            # for i in range(1,len(resultsTable)):
+                # print(i)
+                # print(type(resultsTable[i]))
+                # print(len(str(resultsTable[i])))
+                # print(resultsTable[i], sep='\t')
+            # print(resultsTable)
 
-            #     print(len(key))
-            #     print(key)
-            #     print(resultsTable[key])
-                # for i in range(0,len(results)):
-                # print(*results[i], sep=(' ' * 10))
-            # print(resultsHeader.split(','))
-            # for a in resultsHeader:
-            #     print('\t'.join([str(b) for b in a]))
-            # for i in results:
-            #     print(('\t' * 2).join([str(j) for j in i]))
-                # print(results)
-            #     for j in range(0,len(resultsHeader[i])):
-            #     for j in range(0,len(resultsHeader[i])):
-            #         print(resultsHeader[i][j])
-            #     print(len(i))
-            #     print(resultsHeader[0][i])
-                # for x in range(0,len([i])):
-                #     print(x)
-                # print(i[x])
-            # print('\n' + settingsMessage)
     return resultsMessage, results, settingsMessage
 
 def bcl2fastq_mismatch_settings(indexDict,dualIndexed):
