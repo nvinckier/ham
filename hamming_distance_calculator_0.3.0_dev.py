@@ -15,6 +15,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
     ITALIC = '\033[3m'
     BOLD = '\033[1m'
+    DIM='\033[2m'
     ENDC = '\033[0m'
 
 def print_colors():
@@ -27,6 +28,7 @@ def print_colors():
     print(bcolors.UNDERLINE + "This is the UNDERLINE color/style." + bcolors.ENDC)
     print(bcolors.ITALIC + "This is the ITALIC color/style." + bcolors.ENDC)
     print(bcolors.BOLD + "This is the BOLD color/style." + bcolors.ENDC)
+    print(bcolors.DIM + "This is the BOLD color/style." + bcolors.ENDC)
     print(bcolors.ENDC + "This is the ENDC color/style." + bcolors.ENDC)
     return
 
@@ -51,7 +53,7 @@ def process_args():
         usage()
         sys.exit(1)
     sample_sheet_file = None
-    hamming_distance_maximum = 3
+    hamming_distance_maximum = 4
     demuxer = 0
     verbose = False
 
@@ -183,27 +185,48 @@ def get_hamming_distance(inputList):
             str2 = inputList[num2]
             str2Length = len(str2)
             hamDist = hamming_distance(str1,str2)
-            if hamDist == 0:
+            if hamDist > hamming_distance_maximum:
+                hamDistValues.append(hamDist)
+            elif hamDist == 0:
                 results.append([str1,str2,hamDist,(bcolors.RED + 'Barcode Collision!' + bcolors.ENDC)])
                 hamDistValues.append(0)
             elif 0 < hamDist <= 2:
                 results.append([str1,str2,hamDist,(bcolors.YELLOW + '0 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC)])
                 hamDistValues.append(hamDist)
             elif 3 <= hamDist <= 4:
-                results.append([str1,str2,hamDist,(bcolors.GREEN + '1 mismatch allowed for this index/index combination during demultiplexing.' + bcolors.ENDC)])
+                results.append([str1,str2,hamDist,(bcolors.TEAL + '1 mismatch allowed for this index/index combination during demultiplexing.' + bcolors.ENDC)])
                 hamDistValues.append(hamDist)
             elif 4 < hamDist <= hamming_distance_maximum:
-                results.append([str1,str2,hamDist,(bcolors.TEAL + '2 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC)])
-                hamDistValues.append(hamDist)
-            elif hamDist > hamming_distance_maximum:
+                # results.append([str1,str2,hamDist,(bcolors.TEAL + '2 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC)])
+                results.append([str1,str2,hamDist,(bcolors.DIM + '2 mismatches allowed for this index/index combination during demultiplexing.' + bcolors.ENDC)])
+                # results.append([str1,str2,hamDist,('2 mismatches allowed for this index/index combination during demultiplexing.')])
                 hamDistValues.append(hamDist)
     return results, hamDistValues
+
+def print_hamming_results(resultsList,headerList):
+    print('-' * 150)
+    resultsTable = [headerList]
+    for i in range(0,len(resultsList)):
+        resultsTable.append(resultsList[i])
+    for i in range(0,len(resultsTable[0])):
+        if i < 3:
+            print(resultsTable[0][i], end = '\t')
+        elif i == 3:
+            print(resultsTable[0][i], end = '\n')
+    
+    for i in range(1,len(resultsTable)):
+        for j in range(0,len(resultsTable[0])):
+            if j < 3:
+                print( (str(resultsTable[i][j]) + str( (len(resultsTable[0][j]) - len(str(resultsTable[i][j]))) * ' ' ) ) , end = '\t')
+            elif j == 3:
+                print( (str(resultsTable[i][j]) + str( (len(resultsTable[0][j]) - len(str(resultsTable[i][j]))) * ' ' ) ) , end = '\n')
+    return resultsTable
 
 def bcl_convert_mismatch_settings(indexDict,dualIndexed):
     settingsNotice1 = ('The following sample sheet setting(s) ' + bcolors.ITALIC + 'must' + bcolors.ENDC + ' be used with BCL Convert for this index/index combination:')
     settingsNotice2 = ('The following sample sheet setting(s) can be used with BCL Convert for this index/index combination:')
-    settingsHeader='[BCLConvert_Settings]'
-    settingsDisclaimer = ('\n' + bcolors.ITALIC + bcolors.RED + 'DISCLAIMER: These are options, not recommendations. Please what is appropriate for your use case.' + bcolors.ENDC)
+    settingsHeader=('\n' + '[BCLConvert_Settings]')
+    settingsDisclaimer = ('\n' + bcolors.ITALIC + bcolors.RED + 'DISCLAIMER: These are options, not recommendations. Please use what is appropriate for your use case.' + bcolors.ENDC)
     settingsWarning = (bcolors.RED + 'Barcode Collision! Unable to demultiplex with these indexes alone.' + bcolors.ENDC)
     settingsFail = (bcolors.RED + 'Barcode Collision! Unable to demultiplex. Please verify indexes in sample sheet are correct.' + bcolors.ENDC)
     settingsMessage = ''
@@ -218,29 +241,36 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
     headerCol3 = 'Hamming Distance'
     headerCol4 = 'Comment'
     noHamMatch = 'All hamming distances calculated are greater than '
+    infoMessage = None
     for key in indexDict.keys():
         if key == 'i7' and indexDict[key] == []:
-            print(ERROR + "No i7 indexes detected")
+            print(ERROR + 'No i7 indexes detected')
             sys.exit(1)
         elif key == 'i7' and indexDict[key] != []:
-            resultsMessage = ('\n' + bcolors.BLUE + "Checking i7 index (Index 1) sequences for collisions:" + bcolors.ENDC)
+            resultsMessage = ('\n' * 2 + bcolors.BLUE + 'Checking i7 index (Index 1) sequences for collisions:' + bcolors.ENDC)
             headerCol1 = '1st i7 Index'
             headerCol2 = '2nd i7 Index'
             resultsHeader = [headerCol1, headerCol2, headerCol3, headerCol4]
             results = []
             i7results = get_hamming_distance(indexDict[key])
-            # print(type(i7results))
+            
             if all(val > hamming_distance_maximum for val in i7results[1]):
-                results = ['\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC]
+                if verbose == True:
+                    print(resultsMessage)
+                    print('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC)
             else:
                 results = i7results[0]
+
             if any(val == 0 for val in i7results[1]):
                 i7collision = True
-                barcodeMismatchIndex1Settings='BarcodeMismatchIndex1,0'
-                settingsMessage = settingsWarning
+                if dualIndexed == False:
+                    settingsMessage = settingsFail
+                elif dualIndexed == True:    
+                    barcodeMismatchIndex1Settings='BarcodeMismatchIndex1,0'
+                    settingsMessage = (settingsWarning + '\n' + 'Demultiplexing can still be performed if no collisions are detected for all i7+i5 combinations.' + '\n' + settingsNotice1.replace('The','In that case, the') +  '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings)
             elif any(0 < val < 3 for val in i7results[1]):
                 barcodeMismatchIndex1Settings='BarcodeMismatchIndex1,0'
-                settingsMessage = (settingsNotice1 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings + '\n' + settingsDisclaimer)
+                settingsMessage = (settingsNotice1 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings)
             elif any(val < 5 for val in i7results[1]):
                 barcodeMismatchIndex1Settings='BarcodeMismatchIndex1,1'
                 settingsMessage = (settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings + '\n' + settingsDisclaimer)
@@ -248,11 +278,11 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
                 barcodeMismatchIndex1Settings='BarcodeMismatchIndex1,2'
                 settingsMessage = (settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings + '\n' + settingsDisclaimer)
             if dualIndexed == False or verbose == True:
-                print(resultsMessage)
-                print(results)
-                print(settingsMessage)
+                if results != []:
+                    print_hamming_results(results,resultsHeader)
+                print('\n' + settingsMessage)
         elif key == 'i5' and indexDict[key] != []:
-            resultsMessage = ('\n' + bcolors.BLUE + "Checking i5 index (Index 2) sequences for collisions:" + bcolors.ENDC)
+            resultsMessage = ('\n' * 2 + bcolors.BLUE + 'Checking i5 index (Index 2) sequences for collisions:' + bcolors.ENDC)
             headerCol1 = '1st i5 Index'
             headerCol2 = '2nd i5 Index'
             resultsHeader = [headerCol1, headerCol2, headerCol3, headerCol4]
@@ -260,16 +290,19 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             i5results = get_hamming_distance(indexDict[key])
 
             if all(val > hamming_distance_maximum for val in i5results[1]):
-                results = ['\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC]
+                if verbose == True:
+                    print(resultsMessage)
+                    print('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC)
             else:
                 results = i5results[0]
+
             if any(val == 0 for val in i5results[1]):
                 i5collision = True
                 barcodeMismatchIndex2Settings='BarcodeMismatchIndex2,0'
-                settingsMessage = settingsWarning
+                settingsMessage = (settingsWarning + '\n' + 'Demultiplexing can still be performed if no collisions are detected for all i7+i5 combinations.' + '\n' + settingsNotice1.replace('The','In that case, the') +  '\n' + settingsHeader + '\n' + barcodeMismatchIndex2Settings)
             elif any(0 < val < 3 for val in i5results[1]):
                 barcodeMismatchIndex2Settings='BarcodeMismatchIndex2,0'
-                settingsMessage = (settingsNotice1 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex2Settings + '\n' + settingsDisclaimer)
+                settingsMessage = (settingsNotice1 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex2Settings)
             elif any(val < 5 for val in i5results[1]):
                 barcodeMismatchIndex2Settings='BarcodeMismatchIndex2,1'
                 settingsMessage = (settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex2Settings + '\n' + settingsDisclaimer)
@@ -277,18 +310,19 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
                 barcodeMismatchIndex2Settings='BarcodeMismatchIndex2,2'
                 settingsMessage = (settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex2Settings + '\n' + settingsDisclaimer)
             if verbose == True:
-                print(resultsMessage)
-                print(results)
-                print(settingsMessage)
+                if results != []:
+                    print(resultsMessage)
+                    print_hamming_results(results,resultsHeader)
+                print('\n' + settingsMessage)
         elif key == 'i7_i5' and indexDict[key] != []:
-            resultsMessage = ('\n' + bcolors.BLUE + "Checking i7+i5 index (concatenation of Index 1 and Index 2) sequences for collisions." + bcolors.ENDC + ' (' + bcolors.ITALIC + 'i7 and i5 sequences are assessed individually for BCL Convert' +  bcolors.ENDC + '):')
+            resultsMessage = ('\n' * 2 + bcolors.BLUE + 'Checking i7+i5 index (concatenation of Index 1 and Index 2) sequences for collisions.' + bcolors.ENDC + ' (' + bcolors.ITALIC + 'i7 and i5 sequences are assessed individually for BCL Convert' +  bcolors.ENDC + '):')
             headerCol1 = '1st Index Combination'
             headerCol2 = '2nd Index Combination'
             resultsHeader = [headerCol1, headerCol2, headerCol3, headerCol4]
             results = []
             i7_i5results = get_hamming_distance(indexDict[key])
             
-            if any(val == 0 for val in i7_i5results) or (i7collision == True and i5collision == True):
+            if any(val == 0 for val in i7_i5results[1]):
                 settingsMessage = settingsFail
             elif barcodeMismatchIndex2Settings == None:
                 settingsMessage = (settingsNotice1 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings)
@@ -297,36 +331,41 @@ def bcl_convert_mismatch_settings(indexDict,dualIndexed):
             elif barcodeMismatchIndex1Settings == 'BarcodeMismatchIndex1,1' or barcodeMismatchIndex1Settings == 'BarcodeMismatchIndex1,2' or barcodeMismatchIndex2Settings == 'BarcodeMismatchIndex2,1' or barcodeMismatchIndex2Settings == 'BarcodeMismatchIndex2,2':
                 settingsMessage = (settingsNotice2 + '\n' + settingsHeader + '\n' + barcodeMismatchIndex1Settings + '\n' + barcodeMismatchIndex2Settings + '\n' + settingsDisclaimer)
             else:
-                print(ERROR + "Unexpected BarcodeMismatch setting(s)")
-                print(ERROR + "Value for Index1 barcode mismatch setting: " + barcodeMismatchIndex1Settings)
-                print(ERROR + "Value for Index2 barcode mismatch setting: " + barcodeMismatchIndex2Settings)
+                print(ERROR + 'Unexpected BarcodeMismatch setting(s)')
+                print(ERROR + 'Value for Index1 barcode mismatch setting: ' + barcodeMismatchIndex1Settings)
+                print(ERROR + 'Value for Index2 barcode mismatch setting: ' + barcodeMismatchIndex2Settings)
                 sys.exit(1)
             
             print(resultsMessage)
-            if all(val > hamming_distance_maximum for val in i7_i5results[1]) or verbose == True and (i7collision == False and i5collision == False):
-                results = ['\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations']
-            elif all(val > hamming_distance_maximum for val in i7_i5results[1]) and verbose == True and (i7collision == True or i5collision == True):
-                results = ['\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + ' Collision detected in i7 and/or i5 indexes.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + bcolors.ITALIC + ' Re-run with the ' + bcolors.ENDC + '-v, --verbose' + bcolors.ITALIC + ' option to see more details.' + bcolors.ENDC]
-            elif any(val <= hamming_distance_maximum for val in i7_i5results[1]):
-                results.append(i7_i5results[0])
-            print('-' * 200)
-            print(type(results))    
-            print(results)    
-            for i in range(0,len(results)):
-                print(i)
-                print(len(str(results[i])))
-            print('-' * 200)
-            resultsTable = [resultsHeader]
-            # for i in range(0,len(results)):
-            #     print(i)
-            #     resultsTable.append(results[i])
-            # print(*resultsTable[0], sep='\t')
-            # for i in range(1,len(resultsTable)):
-                # print(i)
-                # print(type(resultsTable[i]))
-                # print(len(str(resultsTable[i])))
-                # print(resultsTable[i], sep='\t')
-            # print(resultsTable)
+            if all(val > hamming_distance_maximum for val in i7_i5results[1]) and (i7collision == False and i5collision == False):
+                if verbose == False:
+                    print('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + bcolors.ITALIC + ' Re-run with the ' + bcolors.ENDC + '-v, --verbose' + bcolors.ITALIC + ' option to see more details.' + bcolors.ENDC)
+                if verbose == True:
+                    print('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + ' See details for i7 and i5 indexes above.')
+            elif all(val > hamming_distance_maximum for val in i7_i5results[1]) and (i7collision == True or i5collision == True):
+                if verbose == False:
+                    print('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + ' Collision detected in i7 and/or i5 indexes.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + bcolors.ITALIC + ' Re-run with the ' + bcolors.ENDC + '-v, --verbose' + bcolors.ITALIC + ' option to see more details.' + bcolors.ENDC)
+                elif verbose == True:
+                    print('\n' + noHamMatch + bcolors.UNDERLINE + bcolors.TEAL + str(hamming_distance_maximum) + bcolors.ENDC + ' for all i7+i5 index combinations.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + ' Collision detected in i7 and/or i5 indexes. See details for i7 and i5 indexes above.')
+            elif any(val == 0 for val in i7_i5results[1]):
+                results = i7_i5results[0]
+            elif any(val <= hamming_distance_maximum for val in i7_i5results[1]) and (any(i7val < 5 for i7val in i7results[1]) or any(i5val < 5 for i5val in i5results[1])):
+                if verbose == False:
+                    infoMessage=('\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + ' Demultiplexing for some i7 and/or i5 indexes will require fewer than 2 mismatches.' + '\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + bcolors.ITALIC + ' Re-run with the ' + bcolors.ENDC + '-v, --verbose' + bcolors.ITALIC + ' option to see more details.' + bcolors.ENDC)
+                elif verbose == True:
+                    infoMessage=('\n' + bcolors.YELLOW + '  INFO:' + bcolors.ENDC + ' Demultiplexing for some i7 and/or i5 indexes will require fewer than 2 mismatches. See details for i7 and i5 indexes above.')
+                results = i7_i5results[0]
+            # elif any(val <= hamming_distance_maximum for val in i7_i5results[1]) and (i7collision == False and i5collision == False):
+            #     results = i7_i5results[0]
+            else:
+                results = i7_i5results[0]
+            
+            if results != [] and infoMessage != None:
+                print_hamming_results(results,resultsHeader)
+                print(infoMessage)
+            elif results != []:
+                print_hamming_results(results,resultsHeader)
+            print('\n' + settingsMessage)
 
     return resultsMessage, results, settingsMessage
 
@@ -440,7 +479,10 @@ def bcl2fastq_mismatch_settings(indexDict,dualIndexed):
 
 def main():
     global sample_sheet_file, hamming_distance_maximum, v2detected, index2mismatchSettings, barcodeMismatchIndex2Settings
+    
+    # Process arguments and options
     process_args()
+
     # Find sample sheet on system
     print("Reporting indexes with hamming distance of " + bcolors.UNDERLINE + bcolors.TEAL + "%s" % hamming_distance_maximum + bcolors.ENDC + " or less" )
     print('')
