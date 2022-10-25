@@ -1,8 +1,9 @@
-#!/bin/python
+#!/bin/python3
 
 import sys
 import getopt
 import os
+import csv
 
 # Define colors for printing to terminal
 class bcolors:
@@ -79,7 +80,7 @@ def usage():
     print("*--._ ./      Hamming                  ___.-'")
     print("    |         Distance             _.-' ")
     print("    :         Calculator        .-/   ")
-    print("     \\        0.2.2          )_ /")
+    print("     \\        0.3.1          )_ /")
     print("      \\                _)   / \\(")
     print("        `.   /-.___.---'(  /   \\\\ ")
     print("         (  /   \\\\       \\(     L\\ ")
@@ -102,14 +103,21 @@ def usage():
     sys.exit(1)
 
 # Remove any blank lines in sample sheet to avoid throwing errors
-def nonblank_lines(f):
-    for l in f:
-        line = l.rstrip()
-        if line:
-            yield line
+# def nonblank_lines(f):
+#     for l in f:
+#         line = l.rstrip(',')
+#         print(line)
+#         line = l.rstrip()
+#         print(line)
+#         if line:
+#             yield line
 
 def open_SS(file):
+    emptyLines = 0
+    nonEmptyLines = 0
+    tsoData = 0
     cloudData = 0
+    stopLine = 0
     newSheet = []
     num = 0
     header = []
@@ -121,55 +129,75 @@ def open_SS(file):
     i7 = []
     i5 = []
     i7_i5 = []
-    with open(file, 'rt') as ss_data_raw:
-        for line in nonblank_lines(ss_data_raw):
-            newSheet+=[line.split(',')]        
-        for num in range(0, len(newSheet)):
-            newLine=newSheet[num]
-            if "[Cloud_Settings]" in newLine:
-                cloudData = num
-        for num in range(0, len(newSheet)):
-            newLine=newSheet[num]
-            if cloudData > 0:
-                if "[Data]" in newLine:
-                    V1 = True
-                    header=newSheet[num+1]
-                    indexes=newSheet[num+2:cloudData]
-                elif "[BCLConvert_Data]" in newLine:
-                    V2 = True
-                    header=newSheet[num+1]
-                    indexes=newSheet[num+2:cloudData]
-            elif cloudData == 0:
-                if "[Data]" in newLine:
-                    V1 = True
-                    header=newSheet[num+1]
-                    indexes=newSheet[num+2:]
-                elif "[BCLConvert_Data]" in newLine:
-                    V2 = True
-                    header=newSheet[num+1]
-                    indexes=newSheet[num+2:]
-            num+=1
-        if header == []:
-            print("No [Data] or [BCLConvert_Data] section found! Please check sample sheet for errors.")
-            sys.exit(1)
-        else:
-            index2 = 'single-indexed'
-            for col in header:
-                if 'index' == col.lower().strip():
-                    index1 = header.index(col)
-                elif 'index2' == col.lower().strip():
-                    index2 = header.index(col)
-            for sampleNum in range(0,len(indexes)):
-                if index2 != 'single-indexed':
-                    dualIndexed = True
-                    i7.append(indexes[sampleNum][index1])
-                    i5.append(indexes[sampleNum][index2])
-                    i7_i5.append(indexes[sampleNum][index1] + '+' +  indexes[sampleNum][index2])
-                else:
-                    i7.append(indexes[sampleNum][index1])
-                allIndexes['i7'] = i7
-                allIndexes['i5'] = i5
-                allIndexes['i7_i5'] = i7_i5
+    # with open(file, 'rt') as ss_data_raw:
+        # Remove lines that are only commas
+        # for line in nonblank_lines(ss_data_raw):
+        #     newSheet+=[line.split(',')]        
+    ss_data_raw = open(file, 'rt')
+    for line in csv.reader(ss_data_raw):
+        if ''.join(line).strip():
+            nonEmptyLines += 1
+            newSheet.append(line)
+            continue
+        elif not ''.join(line).strip():
+            emptyLines += 1
+            continue
+    if emptyLines > 0:
+        print('Removing ' + str(emptyLines) + ' empty lines' + '\n')
+    for num in range(0, len(newSheet)):
+        newLine=newSheet[num]
+        if "[TSO500S_Settings]" in newLine:
+            tsoData = num
+        elif "[Cloud_Settings]" in newLine:
+            cloudData = num
+    if cloudData > 0 and tsoData > 0:
+        stopLine = min(cloudData,tsoData)
+    elif cloudData == 0 and tsoData > 0:
+        stopLine = tsoData
+    elif cloudData > 0 and tsoData == 0:
+        stopLine = cloudData
+    for num in range(0, len(newSheet)):
+        newLine=newSheet[num]
+        if stopLine > 0:
+            if "[Data]" in newLine:
+                V1 = True
+                header=newSheet[num+1]
+                indexes=newSheet[num+2:stopLine]
+            elif "[BCLConvert_Data]" in newLine:
+                V2 = True
+                header=newSheet[num+1]
+                indexes=newSheet[num+2:stopLine]
+        elif stopLine == 0:
+            if "[Data]" in newLine:
+                V1 = True
+                header=newSheet[num+1]
+                indexes=newSheet[num+2:]
+            elif "[BCLConvert_Data]" in newLine:
+                V2 = True
+                header=newSheet[num+1]
+                indexes=newSheet[num+2:]
+        num+=1
+    if header == []:
+        print("No [Data] or [BCLConvert_Data] section found! Please check sample sheet for errors.")
+        sys.exit(1)
+    else:
+        index2 = 'single-indexed'
+        for col in header:
+            if 'index' == col.lower().strip():
+                index1 = header.index(col)
+            elif 'index2' == col.lower().strip():
+                index2 = header.index(col)
+        for sampleNum in range(0,len(indexes)):
+            if index2 != 'single-indexed':
+                dualIndexed = True
+                i7.append(indexes[sampleNum][index1])
+                i5.append(indexes[sampleNum][index2])
+                i7_i5.append(indexes[sampleNum][index1] + '+' +  indexes[sampleNum][index2])
+            else:
+                i7.append(indexes[sampleNum][index1])
+            allIndexes['i7'] = i7
+            allIndexes['i5'] = i5
+            allIndexes['i7_i5'] = i7_i5
     return allIndexes, V1, V2, dualIndexed, i7, i5, i7_i5
 
 # Hamming distance calculation function
@@ -181,6 +209,7 @@ def hamming_distance(string1, string2):
         L = len(string1)
     else:
         L= len(string2)
+    # print(L)
     for i in range(L):
         if string1[i] != string2[i]:
             distance += 1
@@ -387,7 +416,7 @@ def bcl2fastq_mismatch_settings(indexDict,dualIndexed):
     settingsNotice1 = ('The following command-line setting(s) ' + bcolors.ITALIC + 'must' + bcolors.ENDC + ' be used with bcl2fastq for this index/index combination:')
     settingsNotice2 = ('The following command-line setting(s) can be used with bcl2fastq for this index/index combination:')
     
-    settingsDisclaimer = ('\n' + bcolors.ITALIC + bcolors.RED + 'DISCLAIMER: These are options, not recommendations. Please what is appropriate for your use case.' + bcolors.ENDC)
+    settingsDisclaimer = ('\n' + bcolors.ITALIC + bcolors.RED + 'DISCLAIMER: These are options, not recommendations. Please use what is appropriate for your use case.' + bcolors.ENDC)
     settingsWarning = (bcolors.RED + 'Barcode Collision! Unable to demultiplex with these indexes alone.' + bcolors.ENDC)
     settingsFail = (bcolors.RED + 'Barcode Collision! Unable to demultiplex. Please verify indexes in sample sheet are correct.' + bcolors.ENDC)
     settingsMessage = ''
