@@ -202,10 +202,13 @@ def open_SS(file):
 
 # Hamming distance calculation function
 def hamming_distance(string1, string2):
+    print(string1,string2)
+    if string2 == "na" or len(string2) == 0:
+        pass
     # Start with a distance of zero, and count up
     distance = 0
     # Loop over the indices of the string
-    if len(string1) >= len(string2):
+    if len(string1) <= len(string2):
         L = len(string1)
     else:
         L= len(string2)
